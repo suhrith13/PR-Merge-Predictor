@@ -1,0 +1,15 @@
+name = "pr-merge-predictor"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Re-check unresolved predictions every 6 hours to fill in real outcomes.
+[triggers]
+crons = ["0 */6 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pr-merge-predictor-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Set your GitHub token as a secret instead of putting it here:
+#   wrangler secret put GITHUB_TOKEN

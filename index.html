@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PR Merge Predictor</title>
+<style>
+  :root {
+    --bg: #10121a;
+    --surface: #171a24;
+    --surface-2: #1e2230;
+    --border: #2a2f42;
+    --text: #e6e8ef;
+    --muted: #8b90a3;
+    --green: #3fb950;
+    --red: #f85149;
+    --accent: #8b93ff;
+    --amber: #d4a72c;
+    --mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% -10%, rgba(139,147,255,0.08), transparent 40%),
+      radial-gradient(circle at 90% 10%, rgba(63,185,80,0.06), transparent 35%);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 64px 20px 40px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .tagline {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 40px;
+  }
+  .tagline .comment { color: var(--muted); }
+
+  .terminal {
+    width: 100%;
+    max-width: 640px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; }
+  .dot.y { background: #febc2e; }
+  .dot.g { background: #28c840; }
+  .terminal-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+
+  .terminal-body { padding: 22px; }
+
+  .prompt-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+  .prompt-sign { color: var(--green); flex-shrink: 0; }
+  input[type="text"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 8px 0;
+  }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  button {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--accent);
+    color: #14162a;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .output {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--border);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.85;
+    display: none;
+  }
+  .output.visible { display: block; }
+
+  .diff-line { white-space: pre-wrap; word-break: break-word; }
+  .diff-line.add { color: var(--green); }
+  .diff-line.remove { color: var(--red); }
+  .diff-line.neutral { color: var(--muted); }
+  .diff-line .prefix { display: inline-block; width: 18px; }
+
+  .score-big {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 4px 0 10px;
+  }
+  .score-big.merge { color: var(--green); }
+  .score-big.risk { color: var(--red); }
+
+  .factors-label { color: var(--muted); margin-top: 14px; margin-bottom: 4px; }
+
+  .error-line { color: var(--red); font-family: var(--mono); font-size: 13.5px; margin-top: 18px; }
+
+  .resolved-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-top: 10px;
+  }
+
+  .stats-bar {
+    width: 100%;
+    max-width: 640px;
+    margin-top: 22px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    justify-content: center;
+    text-align: center;
+  }
+  .stats-bar strong { color: var(--text); }
+
+  .footnote {
+    max-width: 640px;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.6;
+    margin-top: 28px;
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .terminal { animation: rise 0.5s ease-out; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+  <div class="eyebrow">// self-verifying merge predictions</div>
+  <h1>PR Merge Predictor</h1>
+  <div class="tagline"><span class="comment">// paste any public GitHub pull request. every score gets checked against what actually happens.</span></div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="terminal-title">predict.sh</span>
+    </div>
+    <div class="terminal-body">
+      <div class="prompt-row">
+        <span class="prompt-sign">$</span>
+        <input type="text" id="prUrl" placeholder="https://github.com/owner/repo/pull/123" autocomplete="off" />
+        <button id="scoreBtn">predict</button>
+      </div>
+
+      <div class="output" id="output"></div>
+      <div class="error-line" id="errorLine" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="statsBar">loading live accuracy stats...</div>
+
+  <div class="footnote">
+    Every prediction is logged and re-checked automatically once the PR closes &mdash;
+    no crowdsourcing, no guessing. The accuracy numbers above are computed from real,
+    resolved outcomes, not offline test data.
+  </div>
+
+<script>
+  // Set this to your deployed Worker URL after `wrangler deploy`.
+  const API_BASE_URL = "https://pr-merge-predictor.YOUR_SUBDOMAIN.workers.dev";
+
+  const input = document.getElementById("prUrl");
+  const btn = document.getElementById("scoreBtn");
+  const output = document.getElementById("output");
+  const errorLine = document.getElementById("errorLine");
+  const statsBar = document.getElementById("statsBar");
+
+  function featureLabel(name) {
+    const labels = {
+      additions: "lines added",
+      deletions: "lines deleted",
+      total_diff: "total diff size",
+      changed_files: "files changed",
+      title_length: "title length",
+      body_length: "description length",
+      has_test_keyword: "mentions tests",
+      is_first_time_contributor: "first-time contributor",
+      contributor_merge_rate: "author's merge history here",
+      day_of_week: "day of week opened",
+      hour_of_day: "hour opened",
+      assoc_CONTRIBUTOR: "past contributor",
+      assoc_FIRST_TIME_CONTRIBUTOR: "first-time contributor",
+      assoc_MEMBER: "org member",
+      assoc_NONE: "no association",
+      assoc_OWNER: "repo owner",
+    };
+    return labels[name] || name;
+  }
+
+  async function runPrediction() {
+    const url = input.value.trim();
+    errorLine.style.display = "none";
+    output.classList.remove("visible");
+    output.innerHTML = "";
+
+    if (!url) {
+      errorLine.textContent = "Paste a GitHub pull request URL first.";
+      errorLine.style.display = "block";
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "scoring...";
+
+    try {
+      const resp = await fetch(`${API_BASE_URL}/score`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        errorLine.textContent = data.error || "Could not score that PR.";
+        errorLine.style.display = "block";
+        return;
+      }
+
+      renderResult(data);
+    } catch (e) {
+      errorLine.textContent = "Could not reach the prediction service. Try again in a moment.";
+      errorLine.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "predict";
+    }
+  }
+
+  function renderResult(data) {
+    const pct = Math.round(data.predicted_merge_probability * 100);
+    const cls = pct >= 50 ? "merge" : "risk";
+
+    let html = "";
+    html += `<div class="diff-line neutral"># ${data.title}</div>`;
+    html += `<div class="diff-line neutral"># opened by ${data.author}</div>`;
+    html += `<div class="score-big ${cls}">${pct}% likely to merge</div>`;
+
+    if (data.already_resolved) {
+      const outcome = data.actual_outcome === "merged" ? "merged" : "closed without merging";
+      html += `<div class="resolved-badge">this PR already resolved &middot; actually ${outcome}</div>`;
+    }
+
+    html += `<div class="factors-label">// top factors</div>`;
+    for (const f of data.top_factors) {
+      const sign = f.direction === "increases" ? "+" : "-";
+      const lineClass = f.direction === "increases" ? "add" : "remove";
+      html += `<div class="diff-line ${lineClass}"><span class="prefix">${sign}</span>${featureLabel(f.feature)}</div>`;
+    }
+
+    output.innerHTML = html;
+    output.classList.add("visible");
+  }
+
+  btn.addEventListener("click", runPrediction);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") runPrediction(); });
+
+  async function loadStats() {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/stats`);
+      const data = await resp.json();
+      if (data.resolved_predictions === 0) {
+        statsBar.textContent = "no resolved predictions yet -- check back soon";
+        return;
+      }
+      const acc = data.live_accuracy !== null ? Math.round(data.live_accuracy * 100) + "%" : "n/a";
+      statsBar.innerHTML =
+        `<span><strong>${data.resolved_predictions}</strong> resolved</span>` +
+        `<span><strong>${acc}</strong> live accuracy</span>` +
+        `<span><strong>${data.pending_predictions}</strong> pending verification</span>`;
+    } catch (e) {
+      statsBar.textContent = "stats unavailable right now";
+    }
+  }
+  loadStats();
+</script>
+</body>
+</html>

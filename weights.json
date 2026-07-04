@@ -1,0 +1,32 @@
+{
+  "feature_order": [
+    "additions", "deletions", "total_diff", "changed_files",
+    "title_length", "body_length", "has_test_keyword",
+    "is_first_time_contributor", "contributor_merge_rate",
+    "day_of_week", "hour_of_day",
+    "assoc_CONTRIBUTOR", "assoc_FIRST_TIME_CONTRIBUTOR", "assoc_MEMBER",
+    "assoc_NONE", "assoc_OWNER"
+  ],
+  "coefficients": [
+    -0.15, -0.15, -0.05, -0.10,
+    0.02, 0.03, 0.20,
+    -0.35, 0.90,
+    0.0, 0.0,
+    0.10, -0.50, 0.60,
+    -0.10, 0.80
+  ],
+  "intercept": 0.8,
+  "scaler_mean": [50, 30, 80, 4, 40, 200, 0.3, 0.4, 0.75, 3, 14, 0.3, 0.15, 0.2, 0.3, 0.05],
+  "scaler_scale": [200, 150, 300, 8, 30, 400, 0.46, 0.49, 0.25, 2, 6, 0.46, 0.36, 0.4, 0.46, 0.22],
+  "eval_metrics": {
+    "note": "PLACEHOLDER WEIGHTS -- not trained on real data. Run scripts/collect_data.py + scripts/train_model.py and replace this file before treating scores as meaningful.",
+    "auc": null,
+    "precision": null,
+    "recall": null,
+    "brier_score": null,
+    "baseline_accuracy": null,
+    "model_accuracy": null,
+    "n_train": 0,
+    "n_test": 0
+  }
+}

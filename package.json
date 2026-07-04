@@ -1,0 +1,14 @@
+{
+  "name": "pr-merge-predictor-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute pr-merge-predictor-db --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute pr-merge-predictor-db --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

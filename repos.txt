@@ -1,0 +1,24 @@
+# One "owner/repo" per line. Mix of languages and project sizes/cultures
+# on purpose -- merge norms vary a lot by project, and you want the model
+# to see that variance rather than overfit to one ecosystem.
+
+facebook/react-native
+microsoft/vscode
+vuejs/vue
+django/django
+pallets/flask
+encode/django-rest-framework
+expressjs/express
+rust-lang/rust
+golang/go
+nodejs/node
+angular/angular
+sveltejs/svelte
+tensorflow/tensorflow
+pytorch/pytorch
+scikit-learn/scikit-learn
+kubernetes/kubernetes
+docker/compose
+ansible/ansible
+apache/spark
+elastic/elasticsearch
