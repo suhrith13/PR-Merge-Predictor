@@ -149,6 +149,4 @@ npx wrangler pages deploy .
 - **First-time contributors don't have a true "unknown" signal** — the model falls back to a repo-level baseline rather than a distinct category, a modeling simplification documented in the code.
 - **A small number of very high-traffic repos block search-API access** (an anti-scraping measure on GitHub's side), so training data slightly under-represents the very largest repos.
 
-## License
 
-MIT
